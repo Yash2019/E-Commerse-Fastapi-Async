@@ -1,7 +1,8 @@
 from pwdlib import PasswordHash
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth.models import User
 from fastapi import HTTPException
+from sqlalchemy import select
 import jwt
 from datetime import datetime, timedelta, timezone
 from Config import config
@@ -14,11 +15,14 @@ def verify_password(plain_password: str, hashed_password: str):
 def get_pass_hash(password: str):
     return password_hash.hash(password)
 
-def get_user(db: Session, username: str):
-    return db.query(User).filter(User.username == username).first()
+async def get_user(db: AsyncSession, username: str):
+    stmt = select(User).where(User.username == username)
+    result = await db.execute(stmt)
+    return result.scalars().first()
 
-def authenticate_user(db: Session, username:str, password: str):
-    user = get_user(db, username)
+
+async def authenticate_user(db: AsyncSession, username:str, password: str):
+    user = await get_user(db, username)
     if not user:
         raise HTTPException(status_code=404, detail='User Not Found')
     if not verify_password(password, user.password):

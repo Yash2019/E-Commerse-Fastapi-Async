@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth.models import User
 from fastapi import HTTPException, Depends, status
 import jwt
@@ -12,10 +12,10 @@ from src.auth.logic import get_user
 from src.auth.schema import Register
 from src.auth.logic import get_pass_hash, authenticate_user, create_access_token, create_refresh_token
 
-oauth_scheme = OAuth2PasswordBearer(tokenUrl='login')
+oauth_scheme = OAuth2PasswordBearer(tokenUrl='/auth/login')
 
 async def get_current_user(token: Annotated[str, Depends(oauth_scheme)],
-                     db: Session = Depends(get_db)):
+                     db: AsyncSession = Depends(get_db)):
     credential_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail='Could Not Validate the Creds',
@@ -29,12 +29,12 @@ async def get_current_user(token: Annotated[str, Depends(oauth_scheme)],
     except InvalidTokenError:
         raise credential_exception
     
-    user = get_user(db, username=username)
+    user = await get_user(db, username=username)
     if user is None:
         raise credential_exception
     return user
 
-async def registration(user_create: Register, db: Session = Depends(get_db)):
+async def registration(user_create: Register, db: AsyncSession = Depends(get_db)):
     stmt = select(User).where(User.username == user_create.username)
     result = await db.execute(stmt)
     existing_user = result.scalars().first()
@@ -51,12 +51,12 @@ async def registration(user_create: Register, db: Session = Depends(get_db)):
         password=hashed_password
     )
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    await db.commit()
+    await db.refresh(new_user)
     return new_user
 
-async def login(username: str, password: str, db: Session = Depends(get_db)):
-    user  = authenticate_user(db, username, password)
+async def login(username: str, password: str, db: AsyncSession = Depends(get_db)):
+    user  = await authenticate_user(db, username, password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -77,7 +77,7 @@ async def login(username: str, password: str, db: Session = Depends(get_db)):
     }
 
 
-async def refresh_token(token: str, db: Session=Depends(get_db)):
+async def refresh_token(token: str, db: AsyncSession=Depends(get_db)):
     credential_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail='Could Not Validate the Creds',
@@ -94,7 +94,7 @@ async def refresh_token(token: str, db: Session=Depends(get_db)):
     except InvalidTokenError:
         raise credential_exception
     
-    user = get_user(db, username=username)
+    user = await get_user(db, username=username)
     if user is None:
         raise credential_exception
 
