@@ -1,5 +1,11 @@
 from src.db.main import Base
 from sqlalchemy.orm import Mapped, mapped_column
+from enum import Enum as PyEnum
+
+class UserRole(str, PyEnum):
+    USER = 'user'
+    ADMIN = 'admin'
+
 
 class User(Base):
     __tablename__ = 'users'
@@ -8,4 +14,4 @@ class User(Base):
     username: Mapped[str] = mapped_column(nullable=False)
     email: Mapped[str] = mapped_column(unique=True, nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
-
+    role: Mapped[str] = mapped_column(default=UserRole.USER.value) 
