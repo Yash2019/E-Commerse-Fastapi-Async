@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from src.auth.routes import auth_route
 from src.db.main import create_table
+from src.admin.routes import admin_router
+from src.users.routes import user_router
 
 app = FastAPI()
 
@@ -13,3 +15,6 @@ app.include_router(
     prefix='/auth',
     tags=['Authentication']
 )
+
+app.include_router(admin_router)
+app.include_router(user_router)
