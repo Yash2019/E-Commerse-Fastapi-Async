@@ -1,13 +1,12 @@
-from fastapi import HTTPException, Depends, status
 from src.categories.models import Categories as db_Category
-from src.categories.schema import ReadCategory, UpdateCategory
+from src.categories.schema import CreateCategorySchema, UpdateCategory
 from src.db.main import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 
-async def CreateCategory(task: ReadCategory, db : AsyncSession):
-    new_category = await db_Category(
+async def Create_Category(task: CreateCategorySchema, db : AsyncSession):
+    new_category = db_Category(
         name = task.name
     )
     db.add(new_category)
